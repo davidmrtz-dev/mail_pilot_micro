@@ -17,7 +17,11 @@ const char* API_BASE = "http://gannet-trusted-ray.ngrok-free.app";
 
 Servo doorServo;
 const int SERVO_PIN = D5;
-const int LED_PIN = D4;
+const int ROOM_1_PIN = D4;
+const int ROOM_2_PIN = D6;
+const int ROOM_3_PIN = D7;
+const int ROOM_4_PIN = D0;
+
 const unsigned long POLL_INTERVAL = 3000;
 
 unsigned long lastPollTime = 0;
@@ -31,6 +35,8 @@ void setupDisplay() {
   display.setTextSize(3);
   display.setTextColor(WHITE);
   display.setTextWrap(false);
+  display.clearDisplay();
+  display.display();
 }
 
 void setupServo(){
@@ -119,15 +125,45 @@ bool executeCommand(String command) {
   command.trim();
   command.toUpperCase();
 
-  if (command == "LED_ON") {
-    digitalWrite(LED_PIN, LOW);
-    Serial.println(">> [INFO]: LED ON");
-    showMessage("LED ON");
+  if (command == "ROOM_1_ON") {
+    digitalWrite(ROOM_1_PIN, LOW);
+    Serial.println(">> [INFO]: ROOM 1 ON");
+    showMessage("ROOM 1 ON");
     return true;
-  } else if (command == "LED_OFF") {
-    digitalWrite(LED_PIN, HIGH);
-    Serial.println(">> [INFO]: LED OFF");
-    showMessage("LED OFF");
+  } else if (command == "ROOM_1_OFF") {
+    digitalWrite(ROOM_1_PIN, HIGH);
+    Serial.println(">> [INFO]: ROOM 1 OFF");
+    showMessage("ROOM 1 OFF");
+    return true;
+  } else if (command == "ROOM_2_ON") {
+    digitalWrite(ROOM_2_PIN, LOW);
+    Serial.println(">> [INFO]: ROOM 2 ON");
+    showMessage("ROOM 2 ON");
+    return true;
+  } else if (command == "ROOM_2_OFF") {
+    digitalWrite(ROOM_2_PIN, HIGH);
+    Serial.println(">> [INFO]: ROOM 2 OFF");
+    showMessage("ROOM 2 OFF");
+    return true;
+  } else if (command == "ROOM_3_ON") {
+    digitalWrite(ROOM_3_PIN, LOW);
+    Serial.println(">> [INFO]: ROOM 3 ON");
+    showMessage("ROOM 3 ON");
+    return true;
+  } else if (command == "ROOM_3_OFF") {
+    digitalWrite(ROOM_3_PIN, HIGH);
+    Serial.println(">> [INFO]: ROOM 3 OFF");
+    showMessage("ROOM 3 OFF");
+    return true;
+  } else if (command == "ROOM_4_ON") {
+    digitalWrite(ROOM_4_PIN, LOW);
+    Serial.println(">> [INFO]: ROOM 4 ON");
+    showMessage("ROOM 4 ON");
+    return true;
+  } else if (command == "ROOM_4_OFF") {
+    digitalWrite(ROOM_4_PIN, HIGH);
+    Serial.println(">> [INFO]: ROOM 4 OFF");
+    showMessage("ROOM 4 OFF");
     return true;
   } else if (command == "DOOR_OPEN") {
     doorServo.write(180);
@@ -166,8 +202,14 @@ void showMessage(const String& message) {
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
+  pinMode(ROOM_1_PIN, OUTPUT);
+  pinMode(ROOM_2_PIN, OUTPUT);
+  pinMode(ROOM_3_PIN, OUTPUT);
+  pinMode(ROOM_4_PIN, OUTPUT);
+  digitalWrite(ROOM_1_PIN, HIGH);
+  digitalWrite(ROOM_2_PIN, HIGH);
+  digitalWrite(ROOM_3_PIN, HIGH);
+  digitalWrite(ROOM_4_PIN, HIGH);
   connectToWiFi();
   setupDisplay();
   setupServo();
