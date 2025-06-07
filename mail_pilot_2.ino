@@ -24,7 +24,7 @@ unsigned long lastPollTime = 0;
 
 void setupDisplay() {
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println(F("SSD1306 allocation failed"));
+    Serial.println(F(">> [ERROR]: SSD1306 allocation failed"));
     while (true);
   }
 
@@ -40,14 +40,14 @@ void setupServo(){
 
 void connectToWiFi() {
   WiFi.begin(ssid, password);
-  Serial.print("Conectando a WiFi");
+  Serial.print(">> [INFO]: Connecting to WiFi");
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
-  Serial.println("\n✅ WiFi conectado");
+  Serial.println("\n>> [INFO]: WiFi connected");
 }
 
 void processCommandPayload(const String& payload) {
@@ -55,7 +55,7 @@ void processCommandPayload(const String& payload) {
   DeserializationError err = deserializeJson(doc, payload);
 
   if (err) {
-    Serial.println("⚠️ Error al parsear JSON");
+    Serial.println(">> [ERROR]: Failed to parse JSON");
     return;
   }
 
@@ -63,7 +63,7 @@ void processCommandPayload(const String& payload) {
   int id = doc["id"];
 
   if (command && id) {
-    Serial.print("🟡 Comando recibido: ");
+    Serial.print(">> [INFO]: Command received: ");
     Serial.println(command);
 
     bool success = executeCommand(String(command));
@@ -73,7 +73,7 @@ void processCommandPayload(const String& payload) {
 
 void handleCommandPolling() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("⚠️ WiFi desconectado, reintentando...");
+    Serial.println(">> [WARNING]: WiFi disconnected. Retrying...");
     WiFi.reconnect();
     return;
   }
@@ -95,7 +95,7 @@ bool fetchLatestCommand(String& payload) {
     http.end();
     return true;
   } else {
-    Serial.println("⚠️ Error HTTP: " + String(responseCode));
+    Serial.println(">> [ERROR]: HTTP error: " + String(responseCode));
     http.end();
     return false;
   }
@@ -110,7 +110,7 @@ void confirmCommandStatus(int id, bool success) {
   http.addHeader("Content-Type", "application/json");
 
   int resultCode = http.PATCH("");
-  Serial.print("📤 Confirmación enviada: ");
+  Serial.print(">> [INFO] Confirmation sent: ");
   Serial.println(resultCode);
   http.end();
 }
@@ -121,33 +121,33 @@ bool executeCommand(String command) {
 
   if (command == "LED_ON") {
     digitalWrite(LED_PIN, LOW);
-    Serial.println("✅ LED ON");
+    Serial.println(">> [INFO]: LED ON");
     showMessage("LED ON");
     return true;
   } else if (command == "LED_OFF") {
     digitalWrite(LED_PIN, HIGH);
-    Serial.println("✅ LED OFF");
+    Serial.println(">> [INFO]: LED OFF");
     showMessage("LED OFF");
     return true;
   } else if (command == "DOOR_OPEN") {
     doorServo.write(180);
-    Serial.println("🚪 Puerta abierta");
+    Serial.println(">> [INFO]: Door opened");
     showMessage("DOOR OPENED");
     return true;
   } else if (command == "DOOR_CLOSE") {
     doorServo.write(0);
-    Serial.println("🚪 Puerta cerrada");
+    Serial.println(">> [INFO]: Door closed");
     showMessage("DOOR CLOSED");
     return true;
   }
 
-  Serial.println("❌ Comando no reconocido");
-  showMessage("❌ Comando invalido");
+  Serial.println(">> [ERROR]: Unknown command");
+  showMessage("UNKNOWN COMMAND");
   return false;
 }
 
 void showMessage(const String& message) {
-  int textWidth = message.length() * 12; // 6 px * text size 2
+  int textWidth = message.length() * 12;
   int x = SCREEN_WIDTH;
 
   while (x > -textWidth) {
@@ -157,7 +157,7 @@ void showMessage(const String& message) {
     display.display();
 
     x--;
-    delay(2); // velocidad de scroll
+    delay(2);
   }
 
   display.clearDisplay();
