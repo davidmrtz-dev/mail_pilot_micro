@@ -6,7 +6,7 @@ const char* ssid = "Mega_2.4G_DE0A";
 const char* password = "RRPbGYxf";
 const char* API_BASE = "http://gannet-trusted-ray.ngrok-free.app";
 
-const int LED_PIN = LED_BUILTIN;
+const int LED_PIN = 2;
 const unsigned long POLL_INTERVAL = 3000;
 
 unsigned long lastPollTime = 0;
