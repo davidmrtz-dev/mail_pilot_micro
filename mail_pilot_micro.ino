@@ -7,6 +7,8 @@ const char* password = "RRPbGYxf";
 const char* API_BASE = "http://gannet-trusted-ray.ngrok-free.app";
 
 const int LED_PIN = LED_BUILTIN;
+const unsigned long POLL_INTERVAL = 3000;
+unsigned long lastPollTime = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -25,53 +27,57 @@ void setup() {
 }
 
 void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFiClient client;
-    HTTPClient http;
-    http.begin(client, String(API_BASE) + "/device/commands/latest");
+  unsigned long currentMillis = millis();
 
-    int httpResponseCode = http.GET();
+  if (currentMillis - lastPollTime >= POLL_INTERVAL) {
+    lastPollTime = currentMillis;
 
-    if (httpResponseCode == 200) {
-      String payload = http.getString();
+    if (WiFi.status() == WL_CONNECTED) {
+      WiFiClient client;
+      HTTPClient http;
+      http.begin(client, String(API_BASE) + "/device/commands/latest");
 
-      StaticJsonDocument<256> doc;
-      DeserializationError err = deserializeJson(doc, payload);
+      int httpResponseCode = http.GET();
 
-      if (!err) {
-        const char* command = doc["command"];
-        int id = doc["id"];
+      if (httpResponseCode == 200) {
+        String payload = http.getString();
 
-        if (command && id) {
-          Serial.print("🟡 Comando recibido: ");
-          Serial.println(command);
+        StaticJsonDocument<256> doc;
+        DeserializationError err = deserializeJson(doc, payload);
 
-          bool success = executeCommand(String(command));
+        if (!err) {
+          const char* command = doc["command"];
+          int id = doc["id"];
 
-          String confirmUrl = String(API_BASE) + "/device/commands/" + String(id) + (success ? "/complete" : "/failed");
-          WiFiClient confirmClient;
-          HTTPClient confirm;
-          confirm.begin(confirmClient, confirmUrl);
-          confirm.addHeader("Content-Type", "application/json");
-          int resultCode = confirm.PATCH("");
-          Serial.print("📤 Confirmación enviada: ");
-          Serial.println(resultCode);
-          confirm.end();
+          if (command && id) {
+            Serial.print("🟡 Comando recibido: ");
+            Serial.println(command);
+
+            bool success = executeCommand(String(command));
+
+            String confirmUrl = String(API_BASE) + "/device/commands/" + String(id) + (success ? "/complete" : "/failed");
+            WiFiClient confirmClient;
+            HTTPClient confirm;
+            confirm.begin(confirmClient, confirmUrl);
+            confirm.addHeader("Content-Type", "application/json");
+            int resultCode = confirm.PATCH("");
+            Serial.print("📤 Confirmación enviada: ");
+            Serial.println(resultCode);
+            confirm.end();
+          }
+        } else {
+          Serial.println("⚠️ Error al parsear JSON");
         }
       } else {
-        Serial.println("⚠️ Error al parsear JSON");
+        Serial.println("⚠️ Error HTTP: " + String(httpResponseCode));
       }
+
+      http.end();
     } else {
-      Serial.println("⚠️ Error HTTP: " + String(httpResponseCode));
+      Serial.println("⚠️ WiFi desconectado, reintentando...");
+      WiFi.reconnect();
     }
-
-    http.end();
-  } else {
-    Serial.println("⚠️ WiFi desconectado, reintentando...");
-    WiFi.reconnect();
   }
-
-  delay(3000);
 }
 
 bool executeCommand(String command) {
