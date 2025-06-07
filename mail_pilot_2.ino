@@ -4,10 +4,10 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
+#include <Servo.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define TEXT_BUFFER_SIZE 64
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -15,12 +15,12 @@ const char* ssid = "Mega_2.4G_DE0A";
 const char* password = "RRPbGYxf";
 const char* API_BASE = "http://gannet-trusted-ray.ngrok-free.app";
 
-const int LED_PIN = 2;
+Servo doorServo;
+const int SERVO_PIN = D5;
+const int LED_PIN = D4;
 const unsigned long POLL_INTERVAL = 3000;
 
 unsigned long lastPollTime = 0;
-char currentText[TEXT_BUFFER_SIZE] = "Esperando texto...";
-int scrollX = SCREEN_WIDTH;
 
 void setupDisplay() {
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
@@ -33,19 +33,9 @@ void setupDisplay() {
   display.setTextWrap(false);
 }
 
-void scrollText(const char* text) {
-  display.clearDisplay();
-  int y = (SCREEN_HEIGHT - 24) / 2;
-  display.setCursor(scrollX, y);
-  display.print(text);
-  display.display();
-
-  scrollX--;
-
-  int textWidth = strlen(text) * 12; // 6 * 2 textSize
-  if (scrollX < -textWidth) {
-    scrollX = SCREEN_WIDTH;
-  }
+void setupServo(){
+  doorServo.attach(SERVO_PIN);
+  doorServo.write(0);
 }
 
 void connectToWiFi() {
@@ -132,21 +122,46 @@ bool executeCommand(String command) {
   if (command == "LED_ON") {
     digitalWrite(LED_PIN, LOW);
     Serial.println("✅ LED ON");
+    showMessage("LED ON");
     return true;
   } else if (command == "LED_OFF") {
     digitalWrite(LED_PIN, HIGH);
     Serial.println("✅ LED OFF");
+    showMessage("LED OFF");
     return true;
-  } else if (command.startsWith("DISPLAY:")) {
-    String text = command.substring(8); // lo que viene después de "DISPLAY:"
-    text.toCharArray(currentText, TEXT_BUFFER_SIZE);
-    scrollX = SCREEN_WIDTH; // reiniciar scroll
-    Serial.println("🖥️ Mostrando en pantalla: " + text);
+  } else if (command == "DOOR_OPEN") {
+    doorServo.write(180);
+    Serial.println("🚪 Puerta abierta");
+    showMessage("DOOR OPENED");
+    return true;
+  } else if (command == "DOOR_CLOSE") {
+    doorServo.write(0);
+    Serial.println("🚪 Puerta cerrada");
+    showMessage("DOOR CLOSED");
     return true;
   }
 
   Serial.println("❌ Comando no reconocido");
+  showMessage("❌ Comando invalido");
   return false;
+}
+
+void showMessage(const String& message) {
+  int textWidth = message.length() * 12; // 6 px * text size 2
+  int x = SCREEN_WIDTH;
+
+  while (x > -textWidth) {
+    display.clearDisplay();
+    display.setCursor(x, (SCREEN_HEIGHT - 24) / 2);
+    display.print(message);
+    display.display();
+
+    x--;
+    delay(2); // velocidad de scroll
+  }
+
+  display.clearDisplay();
+  display.display();
 }
 
 void setup() {
@@ -155,6 +170,7 @@ void setup() {
   digitalWrite(LED_PIN, HIGH);
   connectToWiFi();
   setupDisplay();
+  setupServo();
 }
 
 void loop() {
@@ -163,6 +179,5 @@ void loop() {
     handleCommandPolling();
   }
 
-  scrollText(currentText);
   delay(2);
 }
